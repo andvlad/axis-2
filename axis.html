@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name='viewport' content='width=device-width,initial-scale=1'/>
+    <meta content='true' name='HandheldFriendly'/>
+    <meta content='width' name='MobileOptimized'/>
+    <meta content='yes' name='apple-mobile-web-app-capable'/>
+    <title>Ось-2</title>
+  </head>
+
+  <body>
+
+    <!-- Блок с уравнением -->
+    <div id="exp"></div>
+    <!-- Блок с инпутами и осью -->
+    <div id="sec">
+        <input type="text" name="in1" id="inp1" onkeyup="compareInp1()" autofocus>
+        <input type="text" name="in2" id="inp2" onkeyup="compareInp2()">
+        <canvas height='200' width='875' id='arrow'></canvas>
+    </div>
+
+    <style type="text/css">
+
+        div[id="exp"] {
+            text-align: center;
+            border-radius: 1vh;
+            margin: 200px 0 5% 0;
+            font-size: 5vh;
+            font-family: 'Arial';
+        }
+        input, div[id="ex1"], div[id="ex2"] {
+            height: 4vh;
+            width: 1em;
+            border-radius: 1vh;
+            font-size: 3vh;
+            font-family: 'Arial';
+            font-weight: bold;
+        }
+        input[id="inp2"] {
+            display: none;
+        }
+        input[id="inp1"], input[id="inp2"], div[id="ex1"], div[id="ex2"] {
+            position: absolute;
+            z-index: 1;
+        }
+        input[id="inp3"] {
+            width: 1.5em;
+            height: 5vh;
+            font-size: 5vh;
+        }
+        div[id="sec"] {
+            width: 875px;
+            position: relative;
+            margin: 5% 0 0 50%;
+            transform: translateX(-50%);
+        }
+        strong[id="str1"] {
+            width: 2vw;
+            text-align: center;
+        }
+        .focused {
+            background-color: yellow;
+        }
+
+    </style>
+
+    <script>
+
+        // Функция генерирующая случайные числа в заданном диапазоне
+        function randomInteger(min, max) {
+            var rand = min + Math.random() * (max + 1 - min);
+            rand = Math.floor(rand);
+            return rand;
+        }
+
+        var a = randomInteger(6, 9);
+        var b = 0;
+        var c = a + b;
+        var exp = document.getElementById ('exp');
+        // Убеждаемся, что b получится таким, при котором выполниться условие
+        while (c < 11 || c > 14) {b = randomInteger(2, 8); c = a + b;}
+        // Выводим получившееся уравнение
+        exp.innerHTML = '<strong id="str1">' + a + '</strong> + <strong id="str2">' + b + '</strong> = <strong id="str3">?</strong>';
+
+        // Функция предотвращающая не цифровой ввод
+        function noChar(num) {
+            document.getElementsByTagName('input')[num].onkeypress = function(e) {
+                e = e || event;
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+                var chr = getChar(e);
+                if (chr == null) return;
+                if (chr < '0' || chr > '9') {
+                return false;
+                }
+            }
+        }
+
+        function getChar(event) {
+            if (event.which == null) {
+            if (event.keyCode < 32) return null;
+            return String.fromCharCode(event.keyCode)
+            }
+
+            if (event.which != 0 && event.charCode != 0) {
+                if (event.which < 32) return null;
+                return String.fromCharCode(event.which)
+            }
+        return null;
+        }
+
+        noChar(0);
+        // Достаем инпуты
+        var inp1 = document.getElementById ("inp1");
+        var inp2 = document.getElementById ("inp2");
+        // Достаем все три элемента уравнения
+        var str1 = document.getElementById ("str1");
+        var str2 = document.getElementById ("str2");
+        var str3 = document.getElementById ("str3");
+        // Шаг оси
+        var cell = 39;
+        // Координаты нуля
+        var zero = [35, 137];
+        // Координаты элемента a
+        var da = zero[0] + (cell*a);
+        // Размещение инпутов над соответствующими стрелками
+        inp1.style.margin = (zero[1] - 20*a) + 'px 0 0 ' + (zero[0] + (cell*a/2)) + 'px';
+        inp2.style.margin = (zero[1] - 20*b) + 'px 0 0 ' + (da + (cell*b/2)) + 'px';
+
+        if (a == 8 || a == 9) {inp1.style.transform = 'translate(-50%, 20px)'}
+        else {inp1.style.transform = 'translate(-50%, 10px)'};
+
+        if (b == 2 || b == 3 || b == 4) {inp2.style.transform = 'translate(-50%, -30px)'}
+        else if (b == 5) {inp2.style.transform = 'translate(-50%, -10px)'}
+        else {inp2.style.transform = 'translate(-50%, 10px)'};
+
+        // Подсветка цифры, которую нужно ввести
+        if (inp1.addEventListener) {
+            inp1.addEventListener('focus', function() {str1.className = 'focused';}, true);
+            inp1.addEventListener('blur', function() {str1.className = '';}, true);
+        } else {
+            inp1.onfocusin = function() {str1.className = 'focused';};
+            inp1.onfocusout = function() {str1.className = '';};
+        }
+        if (inp2.addEventListener) {
+            inp2.addEventListener('focus', function() {str2.className = 'focused';}, true);
+            inp2.addEventListener('blur', function() {str2.className = '';}, true);
+        } else {
+            inp2.onfocusin = function() {str2.className = 'focused';};
+            inp2.onfocusout = function() {str2.className = '';};
+        }
+
+        // Загрузка оси
+        var arrow = document.getElementById("arrow").getContext('2d');
+        pic = new Image();
+        pic.src = 'sprite.png';
+        // Рисуем стрелки
+        pic.onload = function() {
+            arrow.drawImage(pic, 0, 117);
+            arrow.strokeStyle = '#7442c8';
+            arrow.lineWidth = 3;
+
+            arrow.moveTo(zero[0], zero[1]);
+            arrow.quadraticCurveTo(zero[0] + (cell*a/2),zero[1] - (20*a),zero[0] + (cell*a),zero[1]);
+            arrow.lineTo(zero[0] + (cell*a) - 3, zero[1] - 12);
+            arrow.moveTo(zero[0] + (cell*a),zero[1]);
+            arrow.lineTo(zero[0] + (cell*a) - 12, zero[1] - 3);
+            arrow.stroke();
+        }
+      
+        // Сравниваем ввод первого слагаемого
+        function compareInp1() {
+            if ( inp1.value != a) {
+                // Если ввод не верен, он краснеет
+                inp1.style.color = 'red';
+            } else {
+                // Если верен, убираем инпут
+                inp1.outerHTML = '<div id="ex1">' + inp1.value + '</div>';
+
+                var ex1 = document.getElementById ("ex1");
+                ex1.style.margin = (zero[1] - 20*a) + 'px 0 0 ' + (zero[0] + (cell*a/2)) + 'px';
+
+                str1.className = '';
+
+                if (a == 8 || a == 9) {ex1.style.transform = 'translate(-50%, 20px)'}
+                else {ex1.style.transform = 'translate(-50%, 10px)'};
+                // И выводим инпут для b
+                inp2.style.display = 'block';
+                document.getElementById("inp2").focus();
+                noChar(0);
+
+                arrow.moveTo(zero[0] + (cell*a),zero[1]);
+                arrow.quadraticCurveTo(da + (cell*b/2),zero[1] - (20*b), da + (cell*b),zero[1]);
+                arrow.lineTo(da + (cell*b) - 3, zero[1] - 12);
+                arrow.moveTo(da + (cell*b),zero[1]);
+                arrow.lineTo(da + (cell*b) - 12, zero[1] - 3);
+                arrow.stroke();
+            }
+        }
+        // Сравниваем ввод второго слагаемого
+        function compareInp2() {
+            if ( inp2.value != b) {
+                inp2.style.color = 'red';
+            } else {
+                inp2.outerHTML = '<div id="ex2">' + inp2.value + '</div>';
+
+                var ex2 = document.getElementById ("ex2");
+                ex2.style.margin = (zero[1] - 20*b) + 'px 0 0 ' + (da + (cell*b/2)) + 'px';
+
+                str2.className = '';
+
+                if (b == 2 || b == 3 || b == 4) {ex2.style.transform = 'translate(-50%, -30px)'}
+                else if (b == 5) {inp2.style.transform = 'translate(-50%, -10px)'}
+                else {ex2.style.transform = 'translate(-50%, 10px)'};
+            
+                str3.innerHTML = '<input type="text" name="in3" id="inp3" onkeyup="compareInp3()" autofocus>';
+                var inp3 = document.getElementById ("inp3");
+                inp3.style.display = 'block';
+                // Выводим инпут для суммы после знака равенства
+                inp3.style.position = 'absolute';
+                inp3.style.left = '50%';
+                inp3.style.transform = 'translateX(100%)'
+                inp3.style.top = '200px';
+                document.getElementById("inp3").focus();
+                noChar(0);
+            }
+        }
+        // Сравниваем ввод суммы
+        function compareInp3() {
+            if ( inp3.value != c) {
+                inp3.style.color = 'red';
+            } else {
+                exp.innerHTML = '<strong id="str1">' + a + '</strong> + <strong id="str2">' + b + '</strong> = <strong id="str3">' + c + '</strong>'; 
+            }
+        }
+
+    </script>
+
+    </body>
+</html>
